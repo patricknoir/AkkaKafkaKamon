@@ -47,7 +47,6 @@ class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: Akk
 
   private def parseMetricName(metricName: MetricName): Try[KafkaPartitionMetric] = Try {
     val metricNameParts = metricName.name().split("\\.")
-    system.log.info(metricNameParts(0))
     val (topicName: String, partitionStr: String) = metricNameParts(0).splitAt(metricNameParts(0).lastIndexOf("-"))
 
     val name = metricNameParts(1).replace('-','_')

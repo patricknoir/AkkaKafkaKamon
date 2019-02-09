@@ -42,14 +42,3 @@ libraryDependencies ++= Seq(
   "org.scalamock" %% "scalamock" % TestVersions.ScalaMock % "test",
   "com.typesafe.akka" %% "akka-stream" % Versions.Akka % "test"
 )
-
-credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
-publishTo := {
-  val nexus = "http://repo.addisonglobal.net/"
-  if (isSnapshot.value) {
-    Some("snapshots" at nexus + "repository/addisonglobal-snapshots")
-  } else {
-    Some("releases" at nexus + "repository/addisonglobal-releases")
-  }
-}
-publishMavenStyle := true
