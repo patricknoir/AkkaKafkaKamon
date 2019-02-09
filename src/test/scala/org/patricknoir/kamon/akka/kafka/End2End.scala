@@ -7,6 +7,7 @@ import akka.kafka.scaladsl.Consumer
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
+import kamon.Kamon
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord}
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer, Deserializer, StringDeserializer}
@@ -14,7 +15,7 @@ import org.patricknoir.kamon.akka.kafka.util.AkkaKafkaKamonConfig
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.{AsyncWordSpecLike, BeforeAndAfterAll, Matchers}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 
 class End2End extends TestKit(ActorSystem("end2end"))
@@ -24,18 +25,19 @@ class End2End extends TestKit(ActorSystem("end2end"))
   with BeforeAndAfterAll
   with EmbeddedKafka {
 
-  implicit val mat: ActorMaterializer = ActorMaterializer()
+  implicit val mat: ActorMaterializer = ActorMaterializer()(system)
   private val kafkaPort = 9092
   private val bootstrapServer = s"localhost:$kafkaPort"
   private implicit val config: EmbeddedKafkaConfig = EmbeddedKafkaConfig(kafkaPort = kafkaPort)
-  private implicit val serializer: ByteArraySerializer = new ByteArraySerializer
+
+//  private implicit val serializer: ByteArraySerializer = new ByteArraySerializer
   private implicit val deserializer: ByteArrayDeserializer = new ByteArrayDeserializer
   private val outputTopicNotifications = "outputTopicNotifications"
   private val outputTopicEvents = "outputTopicEvents"
   private val inputTopic = "inputTopic"
 
 
-  private val kafkaTimeout = 50 seconds
+//  private val kafkaTimeout = 50 seconds
 
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
@@ -45,21 +47,24 @@ class End2End extends TestKit(ActorSystem("end2end"))
 
     "monitor the Consumer of a running stream" in {
 
-      val consumerSettings = ConsumerSettings(system, new ByteArrayDeserializer, new StringDeserializer)
+      val consumerSettings = ConsumerSettings(system, deserializer, deserializer)
         .withBootstrapServers("localhost:9092")
         .withGroupId("group1")
         .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
 
 
-      val source: Source[ConsumerRecord[Array[Byte], String], Consumer.Control] = Consumer.plainSource(consumerSettings, Subscriptions.topics("test-topic"))
-
+      val source: Source[ConsumerRecord[Array[Byte], Array[Byte]], Consumer.Control] = Consumer.plainSource(consumerSettings, Subscriptions.topics(inputTopic))
       val control = source.toMat(Sink.ignore)(Keep.left).run()
+//      val monitoring = new ConsumerPartitionsCollector(control, AkkaKafkaKamonConfig())
+//      val f = monitoring.start()(ExecutionContext.global)
+//
+//      Await.ready(f, Duration.Inf)
 
-      val monitoring = new ConsumerPartitionsCollector(control, AkkaKafkaKamonConfig())
+      readLine()
 
-      val f = monitoring.start()
 
-      Await.ready(f, Duration.Inf)
+
+
 
       "monitoring" shouldBe "monitoring"
     }

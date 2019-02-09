@@ -1,5 +1,6 @@
 package org.patricknoir.kamon.akka.kafka
 
+import java.util.concurrent.{ScheduledFuture, TimeUnit}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.Done
@@ -27,7 +28,7 @@ import scala.concurrent.duration.Duration
   */
 class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: AkkaKafkaKamonConfig)(implicit system: ActorSystem) {
 
-  private var running: AtomicBoolean = new AtomicBoolean(false)
+  private var optCancellable: Option[ScheduledFuture[_]] = None
 
   private def retrievePartitionRecordsLagMetrics()(implicit ec: ExecutionContext): Future[List[KafkaPartitionMetricValue]] = {
       for {
@@ -39,7 +40,11 @@ class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: Akk
   private def filterRelevant(metricsMap: Map[MetricName, Metric]): Map[MetricName, Metric] =
     metricsMap.filterKeys(metricName =>
       (metricName.group() == KafkaConstants.CONSUMER_FETCH_MANAGER_METRICS_GROUP) &&
-        (metricName.name.trim.endsWith(KafkaConstants.CONSUMER_PARTITION_RECORDS_LAG_NAME_SUFFIX))
+        (
+          (metricName.name.trim.endsWith(KafkaConstants.CONSUMER_PARTITION_RECORDS_LAG_NAME_SUFFIX)) ||
+            (metricName.name.trim.endsWith(KafkaConstants.CONSUMER_PARTITION_RECORDS_LAG_AVG_NAME_SUFFIX)) ||
+            (metricName.name.trim.endsWith(KafkaConstants.CONSUMER_PARTITION_RECORDS_LAG_MAX_NAME_SUFFIX))
+        )
     )
 
   private def convertKafkaPartitionMetricValue(metricName: MetricName, metric: Metric): Try[KafkaPartitionMetricValue] =
@@ -60,29 +65,27 @@ class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: Akk
     )
   }
 
-  /**
-    * Can be implemented better with scheduler/actors etc...
-    *
-    * @param ec
-    * @return
-    */
-  def start()(implicit ec: ExecutionContext): Future[Done] = {
-    running.set(true)
-    Future {
-      while(running.get()) {
-        val fFilteredMetrics = retrievePartitionRecordsLagMetrics()
-        fFilteredMetrics.foreach { filteredMetrics =>
-          filteredMetrics.foreach(registerKamonMetric)
-        }
-
-        Thread.sleep(config.refreshInterval.toMillis)
-      }
-      Done
-    }
+  def start()(implicit ec: ExecutionContext) = {
+    optCancellable = Some(
+      Kamon.scheduler().scheduleAtFixedRate(
+        new Runnable {
+          override def run(): Unit = {
+            val fFilteredMetrics = retrievePartitionRecordsLagMetrics()
+            fFilteredMetrics.foreach { filteredMetrics =>
+              filteredMetrics.foreach(registerKamonMetric)
+            }
+          }
+        },
+        1L,
+        config.refreshInterval.toSeconds,
+        TimeUnit.SECONDS
+      )
+    )
   }
 
-  def stop(): Unit = {
-    running.set(false)
+  def stop() = {
+    optCancellable.foreach(_.cancel(false))
+    optCancellable = None
   }
 
   private def registerKamonMetric(metricValue: KafkaPartitionMetricValue): Unit = {
