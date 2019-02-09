@@ -1,0 +1,21 @@
+*.class
+*.log
+*.DS_Store
+
+native/
+
+# sbt specific
+target/
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+
+# IntelliJ specific
+.idea
+*.iml
+
+*tgz
+*zip
+
+.scannerwork/
