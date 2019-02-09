@@ -14,4 +14,9 @@ val futureDone = monitor.start()(ExecutionContext.global)
 
 ```
 
-This library will  extract the metrics under the group: ..., and for each consumer and read the dynamic attributes related to the topic/partition records lag.
+This library will  extract the metrics under the group: `consumer-fetch-manager-metrics`, for each consumer it will collect the dynamic attributes associated to the topic-partition is consuming:
+
+```
+<topic name>-<partition number>.records-lag
+...
+```
