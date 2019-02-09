@@ -71,8 +71,9 @@ class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: Akk
     running.set(true)
     Future {
       while(running.get()) {
-        retrievePartitionRecordsLagMetrics().foreach { metrics =>
-          metrics.foreach(registerKamonMetric)
+        val fFilteredMetrics = retrievePartitionRecordsLagMetrics()
+        fFilteredMetrics.foreach { filteredMetrics =>
+          filteredMetrics.foreach(registerKamonMetric)
         }
 
         Thread.sleep(config.refreshInterval.toMillis)
