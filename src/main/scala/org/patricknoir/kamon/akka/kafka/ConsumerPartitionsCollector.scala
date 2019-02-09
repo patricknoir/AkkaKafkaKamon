@@ -55,7 +55,7 @@ class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: Akk
     KafkaPartitionMetric(
       metricName = name,
       metricGroup = metricName.group(),
-      consumerName = metricName.tags().get("client_id"),
+      consumerName = metricName.tags().get("client-id"),
       topic = topicName,
       partition = partitionStr.toInt
     )
