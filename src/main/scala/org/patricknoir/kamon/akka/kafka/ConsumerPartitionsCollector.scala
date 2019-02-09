@@ -67,7 +67,7 @@ class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: Akk
     * @param ec
     * @return
     */
-  def run()(implicit ec: ExecutionContext): Future[Done] = {
+  def start()(implicit ec: ExecutionContext): Future[Done] = {
     running.set(true)
     Future {
       while(running.get()) {
