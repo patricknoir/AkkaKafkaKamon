@@ -1,7 +1,7 @@
 
 name := "AkkaKafkaKamon"
 organization := "org.patricknoir"
-version := "0.2.0-SNAPSHOT"
+version := "0.3.0-SNAPSHOT"
 scalaVersion := "2.12.8"
 
 val Versions = new {
@@ -42,3 +42,24 @@ libraryDependencies ++= Seq(
   "org.scalamock" %% "scalamock" % TestVersions.ScalaMock % "test",
   "com.typesafe.akka" %% "akka-stream" % Versions.Akka % "test"
 )
+
+credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
+publishTo := {
+  val nexus = "http://repo.addisonglobal.net/"
+  if (isSnapshot.value) {
+    Some("snapshots" at nexus + "repository/addisonglobal-snapshots")
+  } else {
+    Some("releases" at nexus + "repository/addisonglobal-releases")
+  }
+}
+publishMavenStyle := true
+credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
+publishTo := {
+  val nexus = "http://repo.addisonglobal.net/"
+  if (isSnapshot.value) {
+    Some("snapshots" at nexus + "repository/addisonglobal-snapshots")
+  } else {
+    Some("releases" at nexus + "repository/addisonglobal-releases")
+  }
+}
+publishMavenStyle := true

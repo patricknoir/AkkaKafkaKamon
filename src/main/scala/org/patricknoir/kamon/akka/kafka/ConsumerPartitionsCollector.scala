@@ -65,7 +65,7 @@ class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: Akk
     )
   }
 
-  def start()(implicit ec: ExecutionContext) = {
+  def start()(implicit ec: ExecutionContext): Option[ScheduledFuture[_]] = {
     optCancellable = Some(
       Kamon.scheduler().scheduleAtFixedRate(
         new Runnable {
@@ -81,6 +81,7 @@ class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: Akk
         TimeUnit.SECONDS
       )
     )
+    optCancellable
   }
 
   def stop() = {
@@ -88,9 +89,9 @@ class ConsumerPartitionsCollector(consumerControl: Consumer.Control, config: Akk
     optCancellable = None
   }
 
-  private def registerKamonMetric(metricValue: KafkaPartitionMetricValue): Unit = {
-    Kamon.histogram(metricValue.partitionMetric.fullMatricName).refine(
+  private def registerKamonMetric(metricValue: KafkaPartitionMetricValue): Unit = if (metricValue.value >= 0L){
+    Kamon.gauge(metricValue.partitionMetric.fullMatricName).refine(
       metricValue.partitionMetric.tags:_*
-    ).record(metricValue.value)
+    ).set(metricValue.value)
   }
 }
